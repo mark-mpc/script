@@ -1,0 +1,144 @@
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local HitboxSettings = {
+    Size = Vector3.new(5, 5, 5),
+    Transparency = 0.5,
+    Color = Color3.fromRGB(0, 255, 0)
+}
+
+local ChamSettings = {
+    Enabled = true,
+    Color = Color3.fromRGB(255, 0, 0),
+    Transparency = 0.8
+}
+
+local function AddChams(character)
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") and part.Name ~= "HumanoidRootPart" then
+            local cham = part:FindFirstChild("Cham")
+            if not cham then
+                cham = Instance.new("BoxHandleAdornment")
+                cham.Name = "Cham"
+                cham.Adornee = part
+                cham.AlwaysOnTop = true
+                cham.ZIndex = 10
+                cham.Size = part.Size
+                cham.Color3 = ChamSettings.Color
+                cham.Transparency = ChamSettings.Transparency
+                cham.Parent = part
+            end
+        end
+    end
+end
+
+local function RemoveChams(character)
+    for _, part in ipairs(character:GetChildren()) do
+        if part:IsA("BasePart") then
+            local cham = part:FindFirstChild("Cham")
+            if cham then
+                cham:Destroy()
+            end
+        end
+    end
+end
+
+local function AdjustHitbox(character)
+    if character and character:FindFirstChild("Head") then
+        local head = character.Head
+        head.Size = HitboxSettings.Size
+        head.Transparency = HitboxSettings.Transparency
+        head.Material = Enum.Material.ForceField
+        head.Color = HitboxSettings.Color
+        head.CanCollide = false
+    end
+    if ChamSettings.Enabled then
+        AddChams(character)
+    else
+        RemoveChams(character)
+    end
+end
+
+local function ApplyToPlayers()
+    local Players = game:GetService("Players")
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= Players.LocalPlayer and player.Character then
+            AdjustHitbox(player.Character)
+        end
+        player.CharacterAdded:Connect(AdjustHitbox)
+    end
+end
+
+game:GetService("Players").PlayerAdded:Connect(function(player)
+    player.CharacterAdded:Connect(AdjustHitbox)
+end)
+ApplyToPlayers()
+
+local Window = Rayfield:CreateWindow({
+    Name = "Hitbox Manager",
+    LoadingTitle = "Initializing Hitbox Manager",
+    LoadingSubtitle = "Customize your gameplay",
+    ConfigurationSaving = {
+        Enabled = true,
+        FileName = "HitboxConfig"
+    },
+    Theme = "Amethyst",
+    KeySystem = false
+})
+
+local MainTab = Window:CreateTab("Settings", nil)
+local HitboxSection = MainTab:CreateSection("Hitbox Adjustments")
+
+MainTab:CreateSlider({
+    Name = "Hitbox Size",
+    Range = {1, 10},
+    Increment = 1,
+    CurrentValue = 5,
+    Callback = function(Value)
+        HitboxSettings.Size = Vector3.new(Value, Value, Value)
+        ApplyToPlayers()
+    end
+})
+
+MainTab:CreateSlider({
+    Name = "Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    CurrentValue = 0,
+    Callback = function(Value)
+        HitboxSettings.Transparency = Value
+        ApplyToPlayers()
+    end
+})
+
+MainTab:CreateDropdown({
+    Name = "Hitbox Color",
+    Options = {"Green", "Red", "Blue", "Yellow"},
+    CurrentOption = "Green",
+    Callback = function(Option)
+        local Colors = {
+            Green = Color3.fromRGB(0, 255, 0),
+            Red = Color3.fromRGB(255, 0, 0),
+            Blue = Color3.fromRGB(0, 0, 255),
+            Yellow = Color3.fromRGB(255, 255, 0)
+        }
+        HitboxSettings.Color = Colors[Option]
+        ApplyToPlayers()
+    end
+})
+
+local ChamsSection = MainTab:CreateSection("Chams Settings")
+
+MainTab:CreateToggle({
+    Name = "Enable Chams",
+    CurrentValue = true,
+    Callback = function(Value)
+        ChamSettings.Enabled = Value
+        ApplyToPlayers()
+    end
+})
+
+Rayfield:Notify({
+    Title = "Hitbox Manager",
+    Content = "GUI Loaded Successfully!",
+    Duration = 5
+})
